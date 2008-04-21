@@ -1,12 +1,22 @@
 module Assertions
-  def assert(value)
-    collect_errors do
-      assert!(value)
-    end
+  def self.method_added(method)
+    define_method(method.to_s.gsub("!", '')) do |*args|
+      collect_errors do
+        send(method, *args)
+      end
+    end if method.to_s =~ /!$/
   end
   
+  def fail(message)
+    raise AssertionFailedError.new(message)
+  end
+
   def assert!(value)
-    raise AssertionFailedError.new("#{value.inspect} is not true.") unless value
+    fail("#{value.inspect} is not true.") unless value
+  end
+  
+  def assert_equal!(expected, actual)
+    fail("Expected: <#{expected}> but was <#{actual}>") unless expected == actual
   end
 end
 
