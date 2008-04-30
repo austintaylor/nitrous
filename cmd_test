@@ -1,0 +1,11 @@
+#!/usr/bin/env ruby
+require 'command_line'
+
+class CmdTest < CommandLineUtility
+  describe :magic, "does some magical stuff"
+  def magic
+    puts "magic"
+  end
+end
+
+CmdTest.run

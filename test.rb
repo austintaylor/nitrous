@@ -1,3 +1,5 @@
+require 'progress_bar'
+
 module Assertions
   def self.method_added(method)
     define_method(method.to_s.gsub("!", '')) do |*args|
@@ -18,6 +20,13 @@ module Assertions
   def assert_equal!(expected, actual)
     fail("Expected: <#{expected}> but was <#{actual}>") unless expected == actual
   end
+  
+  def assert_raise!(type=Exception)
+    yield
+    passed = true
+  rescue type
+    fail("Expected a(n) #{type} to be raised") if passed
+  end
 end
 
 class Test
@@ -30,11 +39,25 @@ class Test
     self.tests << TestBlock.new(name, block)
   end
   
-  def self.run
-    self.new.run
+  def self.inherited(subclass)
+    if !@test_classes
+      @test_classes = []
+      at_exit do
+        context = TestContext.new(@test_classes.sum {|klass| klass.tests.size})
+        @test_classes.each do |klass|
+          klass.run(context)
+        end
+      end
+    end
+    @test_classes << subclass
   end
   
-  def initialize
+  def self.run(context=TestContext.new)
+    self.new(context).run
+  end
+  
+  def initialize(context)
+    @context = context
     @test_results = []
   end
   
@@ -42,6 +65,7 @@ class Test
     yield
   rescue Exception
     @test_results.last.errors << $!
+    @context.failed
   end
   
   def running(test)
@@ -52,8 +76,23 @@ class Test
     self.class.tests.each do |test|
       running(test)
       test.run(self)
+      @context.ran_test(test)
     end
     puts @test_results
+  end
+end
+
+class TestContext
+  def initialize(test_count)
+    @progress_bar = ProgressBar.new(test_count)
+  end
+  
+  def ran_test(test)
+    @progress_bar.step
+  end
+  
+  def failed
+    @progress_bar.color = ProgressBar::RED
   end
 end
 
@@ -98,16 +137,16 @@ class TestResult
   end
 end
 
-class ChickenTest < Test
-  test do
-    assert false
-    assert! nil
-    assert false
-    assert! true
-  end
-  
-  test "another" do
-  end
-end
-
-ChickenTest.run
+# class ChickenTest < Test
+#   test do
+#     assert false
+#     assert! nil
+#     assert false
+#     assert! true
+#   end
+#   
+#   test "another" do
+#   end
+# end
+# 
+# ChickenTest.run
