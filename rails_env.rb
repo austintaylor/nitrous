@@ -1,3 +1,5 @@
+unless defined? RailsEnv
+
 require 'drb'
 
 class RailsEnv
@@ -46,9 +48,10 @@ class RailsEnv
   end
 end
 
-p [__FILE__, $0]
 if __FILE__ == $0
   RailsEnv.create_server("/Users/dotjerky/projects/lawndarts")
 else
   RailsEnv.join
+end
+
 end
