@@ -32,7 +32,7 @@ class ProgressBar
   RED   = 101
   GREEN = 102
   
-  attr_accessor :color
+  attr_accessor :color, :text
   
   def initialize(steps)
     @total_steps = steps
@@ -43,6 +43,7 @@ class ProgressBar
     Curses.close_screen
     puts ""
     $stdout = ProgressBarAwareStandardOut.new($stdout, self)
+    @text = ""
   end
 
   def step
@@ -51,7 +52,10 @@ class ProgressBar
   end
   
   def draw_bar(color, width)
-    $stdout.direct_write("\e[#{color}m#{' '*width}\e[0m\n")
+    content = @text[0..[width, @text.length].min] + " " * [width - @text.length, 0].max
+    $stdout.direct_write("\e[#{color}m#{content}\e[0m")
+    $stdout.direct_write(@text[width..-1]) if @text.length > width
+    $stdout.direct_write("\n")
   end
   
   def delete_bar
