@@ -15,8 +15,8 @@ class AssertionTest < Test
     assert_raise do
       raise Exception.new
     end
-    assert_raise AssertionFailedError do
-      assert! false
+    assert_raise! AssertionFailedError do
+      assert! true
     end
   end
 end

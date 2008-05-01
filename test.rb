@@ -1,12 +1,17 @@
-require 'progress_bar'
+require 'lib/core_ext'
+require 'lib/progress_bar'
 
 module Assertions
   def self.method_added(method)
-    define_method(method.to_s.gsub("!", '')) do |*args|
-      collect_errors do
-        send(method, *args)
+    return unless method.to_s =~ /!$/
+    name = method.to_s.gsub("!", '')
+    module_eval <<-"end;"
+      def #{name}(*args, &b)
+        collect_errors do
+          #{method}(*args, &b)
+        end
       end
-    end if method.to_s =~ /!$/
+    end;
   end
   
   def fail(message)
@@ -21,7 +26,7 @@ module Assertions
     fail("Expected: <#{expected}> but was <#{actual}>") unless expected == actual
   end
   
-  def assert_raise!(type=Exception)
+  def assert_raise!(type=Exception, &block)
     yield
     passed = true
   rescue type
@@ -84,14 +89,23 @@ end
 
 class TestContext
   def initialize(test_count)
+    @total, @failures, @test = test_count, 0, 0
     @progress_bar = ProgressBar.new(test_count)
+    update_text
   end
   
   def ran_test(test)
+    @test += 1
     @progress_bar.step
+    update_text
+  end
+  
+  def update_text
+    @progress_bar.text = "Test #{@test} of #{@total} -- #{@failures} failures"
   end
   
   def failed
+    @failures += 1
     @progress_bar.color = ProgressBar::RED
   end
 end
@@ -101,8 +115,24 @@ class AssertionFailedError < Exception
     @message = message
   end
   
-  def to_s
-    @message
+  def failure_location
+    return @failure_location if @failure_location
+    backtrace.each_with_index do |line, i|
+      if line =~ /test.rb:\d+:in `instance_eval'/
+        @failure_location = backtrace[i-1]
+        break
+      end
+    end
+   @failure_location
+  end
+  
+  def snippet
+    failure_location =~ /^([^:]+):(\d+)/
+    File.readlines($1)[$2.to_i-1]
+  end
+  
+  def format
+    "Assertion failed on #{failure_location}\n#{@message}\n#{snippet}"
   end
 end
 
@@ -129,7 +159,7 @@ class TestResult
   end
   
   def to_s
-    %{#{@test}: #{pass_fail}\n#{@errors.join("\n")}}
+    %{#{@test}: #{pass_fail}\n#{@errors.map(&:format).join("\n")}}
   end
   
   def pass_fail
