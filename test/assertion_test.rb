@@ -1,6 +1,6 @@
 require File.dirname(__FILE__) + '/../test_helper'
-
-class AssertionTest < Test
+AssertionFailedError = Nitrous::AssertionFailedError
+class AssertionTest < Nitrous::Test
   test "Assert" do
     assert true
     assert! true
@@ -15,8 +15,9 @@ class AssertionTest < Test
     assert_raise do
       raise Exception.new
     end
+    
     assert_raise! AssertionFailedError do
-      assert! true
+      assert! false
     end
   end
 end

@@ -1,2 +1,2 @@
-$:.unshift(File.dirname(__FILE__))
-require "test.rb"
+$:.unshift(File.join(File.dirname(__FILE__), 'lib'))
+require "nitrous.rb"
