@@ -23,6 +23,7 @@ module Nitrous
           @test_classes.each do |klass|
             klass.run(context)
           end
+          context.finish
         end
       end
       @test_classes << subclass
