@@ -15,6 +15,10 @@ module Nitrous
       self.tests << TestBlock.new(name, block)
     end
 
+    def self.ztest(name=nil, &block)
+      self.tests << TestBlock.new(name, block, true)
+    end
+
     def self.inherited(subclass)
       if !@test_classes
         @test_classes = []
@@ -38,6 +42,9 @@ module Nitrous
       @test_results = []
     end
 
+    def setup; end
+    def teardown; end
+
     def collect_errors
       yield
     rescue Exception
@@ -50,10 +57,12 @@ module Nitrous
     end
 
     def run
-      self.class.tests.each do |test|
-        running(test)
-        test.run(self)
-        @context.ran_test(test)
+      self.class.tests.each do |test_block|
+        running(test_block)
+        setup
+        test_block.run(self)
+        teardown
+        @context.ran_test(test_block)
       end
       puts @test_results
     end

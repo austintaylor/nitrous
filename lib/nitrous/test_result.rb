@@ -6,10 +6,11 @@ module Nitrous
     end
 
     def to_s
-      %{#{@test}: #{pass_fail}\n#{@errors.map(&:format).join("\n")}}
+      %{#{@test}: #{pass_fail_skip}\n#{@errors.map(&:format).join("\n")}}
     end
 
-    def pass_fail
+    def pass_fail_skip
+      return "Skipped" if @test.skip?
       @errors.empty? ? "Passed" : "Failed"
     end
   end
