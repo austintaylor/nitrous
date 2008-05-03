@@ -46,8 +46,12 @@ module Nitrous
       fail("#{value.inspect} is not true.") unless value
     end
 
-    def assert_equal!(expected, actual)
-      fail("Expected: <#{expected}> but was <#{actual}>") unless expected == actual
+    def assert_nil!(value)
+      fail("#{value.inspect} is not nil.") unless value.nil?
+    end
+
+    def assert_equal!(expected, actual, message=nil)
+      fail(message || "Expected: <#{expected}> but was <#{actual}>") unless expected == actual
     end
 
     def assert_raise!(type=Exception, &block)
