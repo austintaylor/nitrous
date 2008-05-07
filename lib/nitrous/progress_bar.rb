@@ -1,5 +1,11 @@
 require 'curses'
 
+module Kernel
+  def puts(*args)
+    $stdout.puts(*args)
+  end
+end
+
 module Nitrous
   class ProgressBarAwareStandardOut
     def initialize(stdout, progress_bar)
@@ -20,12 +26,6 @@ module Nitrous
 
     def direct_write(object)
       @stdout.write(object)
-    end
-  end
-
-  module Kernel
-    def puts(*args)
-      $stdout.puts(*args)
     end
   end
 

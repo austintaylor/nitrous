@@ -48,7 +48,7 @@ module Nitrous
       update_text
     end
     
-    def ran_test(test)
+    def ran_test(test, result)
       super
       @progress_bar.step
       update_text
@@ -58,7 +58,7 @@ module Nitrous
       @progress_bar.text = summary
     end
     
-    def failed
+    def failed(exception)
       super
       @progress_bar.color = ProgressBar::RED
     end
