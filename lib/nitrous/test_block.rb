@@ -15,7 +15,13 @@ module Nitrous
     end
 
     def to_s
-      @name || "anonymous"
+      @name || first_line
+    end
+    
+    def first_line
+      @block.inspect =~ /#<Proc:[^@]+@([^:]+):(\d+)>/
+      line = File.readlines($1)[$2.to_i].strip
+      "[ #{line} ]"
     end
   end
 end

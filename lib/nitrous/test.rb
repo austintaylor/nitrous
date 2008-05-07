@@ -49,7 +49,7 @@ module Nitrous
       yield
     rescue Exception
       @test_results.last.errors << $!
-      @context.failed
+      @context.failed($!)
     end
 
     def running(test)
@@ -62,9 +62,8 @@ module Nitrous
         setup
         test_block.run(self)
         teardown
-        @context.ran_test(test_block)
+        @context.ran_test(test_block, @test_results.last)
       end
-      puts @test_results
     end
   end
 end

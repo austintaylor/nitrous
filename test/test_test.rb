@@ -17,6 +17,10 @@ class TestTest < Nitrous::Test
     assert !@ztest_ran
   end
   
+  test do
+    # first line
+  end
+  
   def setup
     @setup_called = true
   end

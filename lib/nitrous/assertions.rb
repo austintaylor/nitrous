@@ -17,7 +17,13 @@ module Nitrous
 
     def snippet
       failure_location =~ /^([^:]+):(\d+)/
-      File.readlines($1)[$2.to_i-1]
+      index = $2.to_i - 1
+      lines = File.readlines($1)
+      "...\n" + 
+      "   " + lines[index - 1] + 
+      " >>" + lines[index]     + 
+      "   " + lines[index + 1] + 
+      "...\n"
     end
 
     def format

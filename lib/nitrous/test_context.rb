@@ -18,11 +18,13 @@ module Nitrous
       @total, @failures, @test = test_count, 0, 0
     end
 
-    def ran_test(test)
+    def ran_test(test, result)
       @test += 1
+      puts result
+      puts result.errors.map(&:format).join("\n\n") + "\n" unless result.errors.empty?
     end
 
-    def failed
+    def failed(exception)
       @failures += 1
     end
     
@@ -31,7 +33,7 @@ module Nitrous
     end
     
     def summary
-      "Test #{@test} of #{@total} -- #{@failures} failures"
+      "Test #{@test} of #{@total} -- #{@failures} failure#{@failures == 1 ? '' : 's'}"
     end
     
     def summary_with_benchmark
