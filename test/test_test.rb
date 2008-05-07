@@ -2,11 +2,19 @@ require File.dirname(__FILE__) + '/../test_helper'
 AssertionFailedError = Nitrous::AssertionFailedError
 class TestTest < Nitrous::Test
   test "setup got called" do
-    assert! @setup_called
+    assert @setup_called
   end
   
   test "teardown got called" do
-    assert! @teardown_called
+    assert @teardown_called
+  end
+  
+  ztest "should be skipped" do
+    @ztest_ran = true
+  end
+  
+  test "ztests are skipped" do
+    assert !@ztest_ran
   end
   
   def setup

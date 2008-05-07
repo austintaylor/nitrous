@@ -23,7 +23,7 @@ module Nitrous
       if !@test_classes
         @test_classes = []
         at_exit do
-          context = TestContext.new(@test_classes.sum {|klass| klass.tests.size})
+          context = TestContext.create(@test_classes.sum {|klass| klass.tests.size})
           @test_classes.each do |klass|
             klass.run(context)
           end
