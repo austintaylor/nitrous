@@ -20,6 +20,11 @@ module Nitrous
     end
 
     def self.inherited(subclass)
+      class << subclass
+        def inherited(subclass)
+          Nitrous::Test.inherited(subclass)
+        end
+      end
       if !@test_classes
         @test_classes = []
         at_exit do
