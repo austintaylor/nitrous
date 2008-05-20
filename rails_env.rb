@@ -1,6 +1,14 @@
 unless defined? RailsEnv
   require 'drb'
-
+  
+  module Kernel
+    def at_exit(&block)
+      RailsEnv.exit_blocks << block
+    end
+  end
+  
+  DRbObject.send(:undef_method, :puts)
+  
   class RailsEnv
     class << self
       def join
@@ -15,6 +23,10 @@ unless defined? RailsEnv
         puts "create_server"
         DRb.start_service("druby://:7777", RailsEnv.new(path))
         DRb.thread.join
+      end
+      
+      def exit_blocks
+        @exit_blocks ||= []
       end
     end
   
@@ -36,6 +48,7 @@ unless defined? RailsEnv
         Process.wait
       else
         load filename
+        self.class.exit_blocks.each(&:call)
       end
     rescue Exception
       $stdout.print($!)
