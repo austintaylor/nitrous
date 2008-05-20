@@ -17,3 +17,9 @@ class Exception
     to_s + "\n" + backtrace.join("\n")
   end
 end
+
+class Hash
+  def to_s
+    map {|k,v| "#{k}: #{v}"}.join("\r\n")
+  end
+end

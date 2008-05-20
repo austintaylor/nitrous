@@ -42,7 +42,7 @@ module Nitrous
       Curses.init_screen
       @dimensions = [Curses.stdscr.maxx, Curses.stdscr.maxy]
       Curses.close_screen
-      puts ""
+      $stdout.puts ""
       $stdout = ProgressBarAwareStandardOut.new($stdout, self)
       @text = ""
     end
