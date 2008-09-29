@@ -1,0 +1,171 @@
+require 'webrick_server'
+require 'action_controller/assertions/selector_assertions'
+require 'rails_ext'
+module Nitrous
+  class IntegrationTest < RailsTest
+    include ActionController::Assertions::SelectorAssertions
+    attr_accessor :cookies, :response, :status, :headers, :current_uri
+    at_exit {start_server}
+    
+    def self.start_server
+      @server_thread = Thread.start do
+        DispatchServlet.dispatch(:ip => '0.0.0.0', :server_type => WEBrick::SimpleServer, :port => 4033, :server_root => File.expand_path(RAILS_ROOT + "/public/"))
+      end
+    end
+    
+    ActionController::Routing::Routes.install_helpers(self)
+    def url_for(options)
+      options.delete(:only_path)
+      ActionController::Routing::Routes.generate(options)
+    end
+    
+    def navigate_to(path)
+      get path
+      follow_redirect! if redirect?
+      puts response.body if error?
+      assert !error?
+    end
+
+    def submit_form(id, data = {})
+      id, data = nil, id if id.is_a?(Hash)
+      form = css_select(id ? "form##{id}" : "form").first
+      fail(id ? "Form not found with id <#{id}>" : "No form found") unless form
+      validate_form_fields(form, data)
+      self.send(form["method"], form["action"], data.with_indifferent_access.reverse_merge(hidden_values(form)))
+      assert !error?
+      follow_redirect! && assert(!error?) if redirect?
+    end
+
+    def assert_viewing(request_uri, message="")
+      assert_match %r(#{request_uri}), current_uri, message
+    end
+
+    def hidden_values(form)
+      hiddens = css_select(form, "input[type=hidden]")
+      pairs = hiddens.inject({}) {|p,h| p[h["name"]] = h["value"]; p}
+      ActionController::UrlEncodedPairParser.new(pairs).result
+    end
+
+    def validate_form_fields(form, data)
+      data.to_fields.each do |name, value|
+        form_fields = css_select form, "input, select, textarea"
+        matching_field = form_fields.detect {|field| field["name"] == name || field["name"] == "#{name}[]"}
+        fail "Could not find a form field having the name #{name}" unless matching_field
+        assert_equal "multipart/form-data", form["enctype"], "Form <#{selector}> has a file field <#{name}>, but the enctype is not multipart/form-data" if matching_field["type"] == "file"
+      end
+    end
+
+    def follow_redirect!
+      raise "not a redirect! #{@status} #{@status_message}" unless redirect?
+      get(interpret_uri(headers['location'].first))
+      status
+    end
+
+    def html_document
+      xml = @response.content_type =~ /xml$/
+      @html_document ||= HTML::Document.new(@response.body, false, xml)
+    end
+    
+    def interpret_uri(path)
+      location = URI.parse(path)
+      location.query ? "#{location.path}?#{location.query}" : location.path
+    end
+    
+    def get(path, parameters=nil, headers={})
+      headers['QUERY_STRING'] = requestify(parameters) || ""
+      process(headers, path) do
+        http_session.get(path, headers)
+      end
+    end
+    
+    def post(path, parameters=nil, headers={})
+      data = requestify(parameters) || ""
+      headers['CONTENT_LENGTH'] = data.length.to_s
+      process(headers) do
+        http_session.post(path, data, headers)
+      end
+    end
+    
+    def delete(path, parameters=nil, headers={})
+      headers['QUERY_STRING'] = requestify(parameters) || ""
+      process(headers) do
+        http_session.delete(path, headers)
+      end
+    end
+    
+    def put(path, parameters=nil, headers={})
+      data = requestify(parameters) || ""
+      headers['CONTENT_LENGTH'] = data.length.to_s
+      process(headers) do
+        http_session.put(path, data, headers)
+      end
+    end
+    
+    def process(headers, path=nil)
+      headers['Cookie'] = encode_cookies unless encode_cookies.blank?
+      self.response = yield
+      self.current_uri = path
+      parse_result
+    end
+    
+    # was the response successful?
+    def success?
+      status == 200
+    end
+
+    # was the URL not found?
+    def missing?
+      status == 404
+    end
+
+    # were we redirected?
+    def redirect?
+      (300..399).include?(status)
+    end
+
+    # was there a server-side error?
+    def error?
+      (500..599).include?(status)
+    end
+
+    private
+    
+    def encode_cookies
+      (cookies||{}).inject("") do |string, (name, value)|
+        string << "#{name}=#{value}; "
+      end
+    end
+    
+    def http_session
+      uri = URI.parse("http://localhost:4033/") unless @http
+      @http ||= Net::HTTP.start(uri.host, uri.port)
+    end
+
+    def parse_result
+      @headers = @response.to_hash
+      @cookies = {}
+      (@headers['set-cookie'] || [] ).each do |string|
+        name, value = string.match(/^([^=]*)=([^;]*);/)[1,2]
+        @cookies[name] = value
+      end
+      @status, @status_message = @response.code.to_i, @response.message
+    end
+    
+    def name_with_prefix(prefix, name)
+      prefix ? "#{prefix}[#{name}]" : name.to_s
+    end
+
+    def requestify(parameters, prefix=nil)
+      if Hash === parameters
+        return nil if parameters.empty?
+        parameters.map { |k,v| requestify(v, name_with_prefix(prefix, k)) }.join("&")
+      elsif Array === parameters
+        parameters.map { |v| requestify(v, name_with_prefix(prefix, "")) }.join("&")
+      elsif prefix.nil?
+        parameters
+      else
+        "#{CGI.escape(prefix)}=#{CGI.escape(parameters.to_s)}"
+      end
+    end
+  end
+end
