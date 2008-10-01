@@ -66,7 +66,7 @@ unless defined? RailsEnv
   end
 
   if __FILE__ == $0
-    RailsEnv.create_server("../lawndarts")
+    RailsEnv.create_server("../../lawndarts")
   else
     RailsEnv.join
   end

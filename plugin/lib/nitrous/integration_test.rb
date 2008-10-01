@@ -8,6 +8,17 @@ module Nitrous
     at_exit {start_server}
     
     def self.start_server
+      # parameters = [
+      #   "start",
+      #   "-p", '4033',
+      #   "-a", '0.0.0.0',
+      #   "-e", 'development',
+      #   "-l", "#{RAILS_ROOT}/tmp/mongrel.log",
+      #   "-c", RAILS_ROOT,
+      #   "-r", File.expand_path(RAILS_ROOT + "/public/"),
+      #   "-P", "#{RAILS_ROOT}/tmp/pids/mongrel.pid"
+      # ]
+      # `mongrel_rails #{parameters.join(" ")} -d`
       @server_thread = Thread.start do
         DispatchServlet.dispatch(:ip => '0.0.0.0', :server_type => WEBrick::SimpleServer, :port => 4033, :server_root => File.expand_path(RAILS_ROOT + "/public/"))
       end

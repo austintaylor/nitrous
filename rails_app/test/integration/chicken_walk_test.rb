@@ -2,6 +2,7 @@ require File.dirname(__FILE__) + '/../test_helper'
 
 class ChickenWalkTest < Nitrous::IntegrationTest
   test "create a chicken" do
+    sleep 1
     navigate_to new_chicken_path
     submit_form :chicken => {:name => "Paul"}
     assert created(:chicken) do
