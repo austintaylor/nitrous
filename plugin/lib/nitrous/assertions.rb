@@ -26,7 +26,7 @@ module Nitrous
       "...\n"
     end
 
-    def format
+    def test_output
       "Assertion failed on #{failure_location}\n#{@message}\n#{snippet}"
     end
   end
@@ -60,6 +60,11 @@ module Nitrous
 
     def assert_equal!(expected, actual, message=nil)
       fail(message || "Expected: <#{expected}> but was <#{actual}>") unless expected == actual
+      yield if block_given?
+    end
+    
+    def assert_not_equal!(not_expected, actual, message=nil)
+      fail(message || "Expected: <#{not_expected}> not to equal <#{actual}>") unless not_expected != actual
       yield if block_given?
     end
     

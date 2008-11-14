@@ -6,7 +6,7 @@ module Nitrous
     end
 
     def to_s
-      %{#{@test}: #{pass_fail_skip}}
+      %{  #{@test}: #{pass_fail_skip}}
     end
 
     def pass_fail_skip

@@ -1,4 +1,4 @@
-require 'core_ext'
+require File.dirname(__FILE__) + '/../core_ext'
 require 'nitrous/assertions'
 require 'nitrous/test_block'
 require 'nitrous/test_context'
@@ -63,6 +63,7 @@ module Nitrous
     end
 
     def run
+      puts self.class.name
       self.class.tests.each do |test_block|
         running(test_block)
         nitrous_setup

@@ -21,9 +21,9 @@ module Nitrous
     def ran_test(test, result)
       @test += 1
       puts result
-      puts result.errors.map(&:format).join("\n\n") + "\n" unless result.errors.empty?
+      puts result.errors.map(&:test_output).join("\n\n") + "\n" unless result.errors.empty?
     end
-
+    
     def failed(exception)
       @failures += 1
     end
