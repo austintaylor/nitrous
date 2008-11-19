@@ -48,6 +48,7 @@ module Nitrous
     end
 
     def nitrous_setup; end
+    def nitrous_teardown; end
     def setup; end
     def teardown; end
 
@@ -67,9 +68,12 @@ module Nitrous
       self.class.tests.each do |test_block|
         running(test_block)
         nitrous_setup
-        setup
-        test_block.run(self)
-        teardown
+        collect_errors do
+          setup
+          test_block.run(self)
+          teardown
+        end
+        nitrous_teardown
         @context.ran_test(test_block, @test_results.last)
       end
     end

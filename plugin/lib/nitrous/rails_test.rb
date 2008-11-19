@@ -22,5 +22,11 @@ module Nitrous
         super
         reset_record_tracking
       end
+      
+      def nitrous_teardown
+        ActiveRecord::Base.send(:subclasses).each do |klass|
+          klass.delete_all
+        end
+      end
   end
 end

@@ -15,7 +15,7 @@ class Symbol
 end
 
 class Exception
-  def format
+  def test_output
     to_s + "\n" + backtrace.join("\n")
   end
 end
