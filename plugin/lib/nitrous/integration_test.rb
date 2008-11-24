@@ -43,12 +43,24 @@ module Nitrous
       fail(id ? "Form not found with id <#{id}>" : "No form found") unless form
       validate_form_fields(form, data)
       self.send(form["method"], form["action"], data.with_indifferent_access.reverse_merge(hidden_values(form)))
+      puts response.body if error?
       assert !error?
-      follow_redirect! && assert(!error?) if redirect?
+      @redisplay = true if !redirect? && id && css_select("form##{id}").first
+      follow_redirect! if redirect?
+      puts response.body if error?
+      assert !error? 
+    end
+    
+    def assert_form_redisplayed
+      assert @redisplay
+    end
+    
+    def field_value(name)
+      css_select(html_document.root, "input, select, textarea").detect {|field| field["name"] == name}["value"]
     end
 
     def assert_viewing(request_uri, message="")
-      assert_match %r(#{request_uri}), current_uri, message
+      assert_match %r(#{request_uri}(\?|&|$)), current_uri, message
     end
 
     def hidden_values(form)
@@ -92,14 +104,14 @@ module Nitrous
     def post(path, parameters=nil, headers={})
       data = requestify(parameters) || ""
       headers['CONTENT_LENGTH'] = data.length.to_s
-      process(headers) do
+      process(headers, path) do
         http_session.post(path, data, headers)
       end
     end
     
     def delete(path, parameters=nil, headers={})
       headers['QUERY_STRING'] = requestify(parameters) || ""
-      process(headers) do
+      process(headers, path) do
         http_session.delete(path, headers)
       end
     end
@@ -107,7 +119,7 @@ module Nitrous
     def put(path, parameters=nil, headers={})
       data = requestify(parameters) || ""
       headers['CONTENT_LENGTH'] = data.length.to_s
-      process(headers) do
+      process(headers, path) do
         http_session.put(path, data, headers)
       end
     end
@@ -116,6 +128,7 @@ module Nitrous
       headers['Cookie'] = encode_cookies unless encode_cookies.blank?
       self.response = yield
       self.current_uri = path
+      @html_document = nil
       parse_result
     end
     

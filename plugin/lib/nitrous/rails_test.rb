@@ -2,18 +2,38 @@ require 'rails_ext'
 module Nitrous
   class RailsTest < Nitrous::Test
     def created(type)
-      (ActiveRecord::Base.saved_objects[type] && ActiveRecord::Base.saved_objects[type].last) || 
-        ActiveRecord::Base.saved_objects[type.to_s.singularize.to_sym]
+      lookup(type, ActiveRecord::Base.saved_objects)
     end
-
+    
+    def assert_created!(type)
+      instance = created(type)
+      fail("Should have created a #{type}.#{invalid(type) ? " Errors: #{invalid(type).errors.to_a}" : ''}") unless instance
+      yield(instance) if block_given?
+      instance
+    end
+    
+    def assert_not_created!(type)
+      instance = created(type).reload rescue nil
+      fail("Should not have created a #{type}. Instance: #{instance.inspect}") if instance
+      yield if block_given?
+    end
+    
+    def invalid(type)
+      lookup(type, ActiveRecord::Base.invalid_objects)
+    end
+    
     def destroyed(type)
-      (ActiveRecord::Base.destroyed_objects[type] && ActiveRecord::Base.destroyed_objects[type].last) || 
-        ActiveRecord::Base.destroyed_objects[type.to_s.singularize.to_sym]
+      lookup(type, ActiveRecord::Base.destroyed_objects)
     end
     
     private
+      def lookup(type, list)
+        (list[type] && list[type].last) || list[type.to_s.singularize.to_sym]
+      end
+
       def reset_record_tracking
         ActiveRecord::Base.saved_objects = {}
+        ActiveRecord::Base.invalid_objects = {}
         ActiveRecord::Base.destroyed_objects = {}
         @emails = ActionMailer::Base.deliveries.size
       end

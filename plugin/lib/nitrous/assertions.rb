@@ -43,6 +43,14 @@ module Nitrous
         end
       end;
     end
+    
+    def self.included(mod)
+      mod.module_eval do
+        def self.method_added(method)
+          Assertions.method_added(method)
+        end
+      end
+    end
 
     def fail(message)
       raise AssertionFailedError.new(message)
