@@ -18,10 +18,15 @@ module Nitrous
     def self.ztest(name=nil, &block)
       self.tests << TestBlock.new(name, block, true)
     end
+    
+    def self.exclude(klass)
+      @test_classes.delete(klass)
+    end
 
     def self.inherited(subclass)
       class << subclass
         def inherited(subclass)
+          Nitrous::Test.exclude(self)
           Nitrous::Test.inherited(subclass)
         end
       end
