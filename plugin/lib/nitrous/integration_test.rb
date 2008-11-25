@@ -20,7 +20,11 @@ module Nitrous
       # ]
       # `mongrel_rails #{parameters.join(" ")} -d`
       @server_thread = Thread.start do
-        DispatchServlet.dispatch(:ip => '0.0.0.0', :server_type => WEBrick::SimpleServer, :port => 4033, :server_root => File.expand_path(RAILS_ROOT + "/public/"))
+        Socket.do_not_reverse_lookup = true # patch for OS X
+        server = WEBrick::HTTPServer.new(:BindAddress => '0.0.0.0', :ServerType => WEBrick::SimpleServer, :Port => 4033, :AccessLog => [], :Logger => WEBrick::Log.new("/dev/null"))
+        server.mount('/', DispatchServlet, :server_root => File.expand_path(RAILS_ROOT + "/public/"))
+        trap("INT") { server.shutdown }
+        server.start
       end
     end
     
