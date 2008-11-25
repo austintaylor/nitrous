@@ -65,6 +65,7 @@ module Nitrous
     end
 
     def running(test)
+      @current_test = test
       @test_results << TestResult.new(test)
     end
 
