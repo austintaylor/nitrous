@@ -1,18 +1,13 @@
 module Nitrous
   class AssertionFailedError < Exception
-    def initialize(message)
-      @message = message
+    def initialize(message, filename)
+      @message, @filename = message, filename
     end
 
     def failure_location
-      return @failure_location if @failure_location
-      backtrace.each_with_index do |line, i|
-        if line =~ /test_block.rb:\d+:in `instance_eval'/
-          @failure_location = backtrace[i-1]
-          break
-        end
+      @failure_location ||= backtrace.detect do |line|
+        line.include?(@filename)
       end
-     @failure_location
     end
 
     def snippet
@@ -53,7 +48,7 @@ module Nitrous
     end
 
     def fail(message)
-      raise AssertionFailedError.new(message)
+      raise AssertionFailedError.new(message, @current_test.filename)
     end
 
     def assert!(value)
