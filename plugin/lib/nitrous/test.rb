@@ -41,7 +41,6 @@ module Nitrous
       if !@test_classes
         @test_classes = []
         at_exit do
-          puts callbacks.inspect
           callbacks[:suite_setup].each(&:call)
           context = TestContext.create(@test_classes.sum {|klass| klass.tests.size})
           @test_classes.each do |klass|
