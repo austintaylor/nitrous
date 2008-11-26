@@ -6,7 +6,15 @@ require 'nitrous/test_result'
 module Nitrous
   class Test
     include Assertions
-
+    
+    def self.callbacks
+      @@callbacks ||= {:suite_setup => [], :suite_teardown => []}
+    end
+    
+    def self.register_callback(type, &callback)
+      callbacks[type] << callback
+    end
+    
     def self.tests
       @tests ||= []
     end
@@ -33,11 +41,14 @@ module Nitrous
       if !@test_classes
         @test_classes = []
         at_exit do
+          puts callbacks.inspect
+          callbacks[:suite_setup].each(&:call)
           context = TestContext.create(@test_classes.sum {|klass| klass.tests.size})
           @test_classes.each do |klass|
             klass.run(context)
           end
           context.finish
+          callbacks[:suite_teardown].each(&:call)
         end
       end
       @test_classes << subclass

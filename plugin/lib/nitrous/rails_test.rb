@@ -7,7 +7,7 @@ module Nitrous
     
     def assert_created!(type)
       instance = created(type)
-      fail("Should have created a #{type}.#{invalid(type) ? " Errors: #{invalid(type).errors.to_a}" : ''}") unless instance
+      fail("Should have created a #{type}.#{invalid(type) ? " Errors: #{invalid(type).errors.full_messages.to_sentence}" : ''}") unless instance
       yield(instance) if block_given?
       instance
     end
