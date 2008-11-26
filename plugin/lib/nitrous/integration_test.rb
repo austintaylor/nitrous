@@ -21,11 +21,12 @@ module Nitrous
       # `mongrel_rails #{parameters.join(" ")} -d`
       @server_thread = Thread.start do
         Socket.do_not_reverse_lookup = true # patch for OS X
-        server = WEBrick::HTTPServer.new(:BindAddress => '0.0.0.0', :ServerType => WEBrick::SimpleServer, :Port => 4033, :AccessLog => [], :Logger => WEBrick::Log.new("/dev/null"))
+        server = WEBrick::HTTPServer.new(:BindAddress => '0.0.0.0', :ServerType => WEBrick::SimpleServer, :Port => 4022, :AccessLog => [], :Logger => WEBrick::Log.new("/dev/null"))
         server.mount('/', DispatchServlet, :server_root => File.expand_path(RAILS_ROOT + "/public/"))
         trap("INT") { server.shutdown }
         server.start
       end
+      sleep 0.001 until @server_thread.status == "sleep"
     end
     
     ActionController::Routing::Routes.install_helpers(self)
@@ -165,7 +166,7 @@ module Nitrous
     end
     
     def http_session
-      uri = URI.parse("http://localhost:4033/") unless @http
+      uri = URI.parse("http://localhost:4022/") unless @http
       @http ||= Net::HTTP.start(uri.host, uri.port)
     end
 
