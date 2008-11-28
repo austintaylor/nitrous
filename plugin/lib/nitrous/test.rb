@@ -18,6 +18,10 @@ module Nitrous
     def self.tests
       @tests ||= []
     end
+    
+    def self.test_classes
+      @test_classes ||= []
+    end
 
     def self.test(name=nil, &block)
       self.tests << TestBlock.new(name, block)
@@ -61,7 +65,9 @@ module Nitrous
       @context = context
       @test_results = []
     end
-
+    
+    def self.setup; end
+    def self.teardown; end
     def nitrous_setup; end
     def nitrous_teardown; end
     def setup; end
@@ -81,6 +87,7 @@ module Nitrous
 
     def run
       puts self.class.name
+      self.class.setup
       self.class.tests.each do |test_block|
         running(test_block)
         nitrous_setup
@@ -92,6 +99,7 @@ module Nitrous
         nitrous_teardown
         @context.ran_test(test_block, @test_results.last)
       end
+      self.class.teardown
     end
   end
 end
