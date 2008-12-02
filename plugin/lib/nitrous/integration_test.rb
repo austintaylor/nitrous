@@ -72,6 +72,10 @@ module Nitrous
     def assert_viewing(request_uri, message="")
       assert_match %r(#{request_uri}(\?|&|$)), current_uri, message
     end
+    
+    def assert_page_contains!(string)
+      fail("Expected page to contain <#{string}> but it did not. Page:\n#{response.body}") unless response.body.include?(string)
+    end
 
     def hidden_values(form)
       hiddens = css_select(form, "input[type=hidden]")
