@@ -31,8 +31,11 @@ module Nitrous
     
     ActionController::Routing::Routes.install_helpers(self)
     def url_for(options)
-      options.delete(:only_path)
-      ActionController::Routing::Routes.generate(options)
+      if options.delete(:only_path)
+        ActionController::Routing::Routes.generate(options)
+      else
+        "http://localhost:4022" + ActionController::Routing::Routes.generate(options)
+      end
     end
     
     def navigate_to(path)
@@ -58,7 +61,7 @@ module Nitrous
     
     def click_link(url)
       fail("No link found with url <#{url}>") unless css_select("a[href=#{url}]").first
-      get(url)
+      navigate_to(url)
     end
     
     def assert_form_redisplayed
@@ -76,7 +79,7 @@ module Nitrous
     def assert_page_contains!(string)
       fail("Expected page to contain <#{string}> but it did not. Page:\n#{response.body}") unless response.body.include?(string)
     end
-
+    
     def hidden_values(form)
       hiddens = css_select(form, "input[type=hidden]")
       pairs = hiddens.inject({}) {|p,h| p[h["name"]] = h["value"]; p}
@@ -90,6 +93,12 @@ module Nitrous
         fail "Could not find a form field having the name #{name}" unless matching_field
         assert_equal "multipart/form-data", form["enctype"], "Form <#{selector}> has a file field <#{name}>, but the enctype is not multipart/form-data" if matching_field["type"] == "file"
       end
+    end
+    
+    def view(email)
+      @response = ActionController::TestResponse.new
+      @response.body = email.body
+      @html_document = nil
     end
 
     def follow_redirect!
