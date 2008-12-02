@@ -102,7 +102,11 @@ module Nitrous
     def get(path, parameters=nil, headers={})
       headers['QUERY_STRING'] = requestify(parameters) || ""
       process(headers, path) do
-        http_session.get(path, headers)
+        if(!headers['QUERY_STRING'].blank?)
+          http_session.get(path + "?#{headers['QUERY_STRING']}", headers)
+        else
+          http_session.get(path, headers)
+        end
       end
     end
     
