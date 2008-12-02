@@ -56,6 +56,11 @@ module Nitrous
       assert !error? 
     end
     
+    def click_link(url)
+      fail("No link found with url <#{url}>") unless css_select("a[href=#{url}]").first
+      get(url)
+    end
+    
     def assert_form_redisplayed
       assert @redisplay
     end
