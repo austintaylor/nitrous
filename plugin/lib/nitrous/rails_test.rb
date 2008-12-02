@@ -18,6 +18,13 @@ module Nitrous
       yield if block_given?
     end
     
+    def assert_email_sent!(count=1, &block)
+      assert_equal! @emails + count, ActionMailer::Base.deliveries.size
+      block.call(*ActionMailer::Base.deliveries[-count..-1])
+    ensure
+      @emails = ActionMailer::Base.deliveries.size
+    end
+    
     def invalid(type)
       lookup(type, ActiveRecord::Base.invalid_objects)
     end
