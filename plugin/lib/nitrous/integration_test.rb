@@ -1,6 +1,7 @@
 require 'webrick_server'
 require 'action_controller/assertions/selector_assertions'
 require 'rails_ext'
+require 'mime/types'
 module Nitrous
   class IntegrationTest < RailsTest
     include ActionController::Assertions::SelectorAssertions
@@ -44,13 +45,19 @@ module Nitrous
       puts response.body if error?
       assert !error?
     end
-
+    
+    BOUNDARY = 'multipart-boundary000'
     def submit_form(id, data = {})
       id, data = nil, id if id.is_a?(Hash)
       form = css_select(id ? "form##{id}" : "form").first
       fail(id ? "Form not found with id <#{id}>" : "No form found") unless form
       validate_form_fields(form, data)
-      self.send(form["method"], form["action"], data.with_indifferent_access.reverse_merge(hidden_values(form)))
+      fields = data.with_indifferent_access.reverse_merge(hidden_values(form))
+      if form['enctype'] == 'multipart/form-data'
+        self.send(form["method"], form["action"], multipart_encode(fields), {'Content-Type' => "multipart/form-data, boundary=#{BOUNDARY}"})
+      else
+        self.send(form["method"], form["action"], fields)
+      end
       puts response.body if error?
       assert !error?
       @redisplay = true if !redirect? && id && css_select("form##{id}").first
@@ -59,8 +66,29 @@ module Nitrous
       assert !error? 
     end
     
+    def multipart_encode(fields)
+      data = ""
+      fields.to_fields.each do |key, value|
+        data << "--#{BOUNDARY}\r\n"
+        if value.respond_to?(:read)
+          filename = File.basename(value.path)
+          data << "Content-Disposition: form-data; name=\"#{key}\"; filename=\"#{filename}\"\r\n"
+          data << "Content-Transfer-Encoding: binary\r\n"
+          data << "Content-Type: #{MIME::Types.type_for(filename)}\r\n\r\n"
+          data << value.read
+        else
+          data << "Content-Disposition: form-data; name=\"#{key}\"\r\n\r\n"
+          p value unless value.is_a?(String)
+          data << value
+        end
+        data << "\r\n"
+      end
+      data << "--#{BOUNDARY}--"
+      data
+    end
+    
     def click_link(url)
-      fail("No link found with url <#{url}>") unless css_select("a[href=#{url}]").first
+      fail("No link found with url <#{url}>") unless css_select("*[href=#{url}]").first
       navigate_to(url)
     end
     
@@ -91,7 +119,8 @@ module Nitrous
         form_fields = css_select form, "input, select, textarea"
         matching_field = form_fields.detect {|field| field["name"] == name || field["name"] == "#{name}[]"}
         fail "Could not find a form field having the name #{name}" unless matching_field
-        assert_equal "multipart/form-data", form["enctype"], "Form <#{selector}> has a file field <#{name}>, but the enctype is not multipart/form-data" if matching_field["type"] == "file"
+        assert_equal 'file', matching_field['type'] if value.is_a?(File)
+        assert_equal "multipart/form-data", form["enctype"], "Form <#{form['id']}> has a file field <#{name}>, but the enctype is not multipart/form-data" if matching_field["type"] == "file"
       end
     end
     
@@ -216,6 +245,20 @@ module Nitrous
         parameters
       else
         "#{CGI.escape(prefix)}=#{CGI.escape(parameters.to_s)}"
+      end
+    end
+    
+    class DummyFile
+      def initialize(name, content)
+        @name, @content = name, content
+      end
+      
+      def read
+        @content
+      end
+      
+      def path
+        "/tmp/#{@name}"
       end
     end
   end
