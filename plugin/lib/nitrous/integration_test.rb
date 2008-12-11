@@ -66,6 +66,16 @@ module Nitrous
       assert !error? 
     end
     
+    
+    def post_form(url, data={}, method=:post)
+      fields = data.to_fields
+      if fields.values.any? {|v| v.respond_to?(:read)}
+        self.send(method, url, multipart_encode(fields), {'Content-Type' => "multipart/form-data, boundary=#{BOUNDARY}"})
+      else
+        self.send(method, url, fields)
+      end
+    end
+    
     def multipart_encode(fields)
       data = ""
       fields.to_fields.each do |key, value|
