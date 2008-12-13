@@ -84,5 +84,12 @@ module Nitrous
       fail("Expected a(n) #{type} to be raised but raised a(n) #{e.class}") if e.class != type
       fail("Expected a(n) #{type} to be raised") if passed
     end
+    
+    def assert_not_raised!(type=Exception, &block)
+      yield
+    rescue type => e
+      fail("Expected a(n) #{type} not to be raised but a(n) #{e.class} was raised.\n#{e.message}")
+    end
+    alias_method :assert_nothing_raised!, :assert_not_raised!
   end
 end
