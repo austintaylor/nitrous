@@ -102,8 +102,8 @@ module Nitrous
       navigate_to(url)
     end
     
-    def assert_form_redisplayed
-      assert @redisplay
+    def assert_form_redisplayed!
+      fail("Expected form to redisplay. Redirected to <#{current_uri}>") unless @redisplay
     end
     
     def field_value(name)
