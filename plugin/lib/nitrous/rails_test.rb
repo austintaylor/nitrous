@@ -20,7 +20,7 @@ module Nitrous
     
     def assert_email_sent!(count=1, &block)
       assert_equal! @emails + count, ActionMailer::Base.deliveries.size
-      block.call(*ActionMailer::Base.deliveries[-count..-1])
+      block.call(*ActionMailer::Base.deliveries[-count..-1]) if block_given?
     ensure
       @emails = ActionMailer::Base.deliveries.size
     end
