@@ -52,7 +52,7 @@ module Nitrous
       form = css_select(id ? "form##{id}" : "form").first
       fail(id ? "Form not found with id <#{id}>" : "No form found") unless form
       validate_form_fields(form, data)
-      fields = data.with_indifferent_access.reverse_merge(hidden_values(form))
+      fields = data.to_fields.reverse_merge(existing_values(form).to_fields)
       if form['enctype'] == 'multipart/form-data'
         self.send(form["method"], form["action"], multipart_encode(fields), {'Content-Type' => "multipart/form-data, boundary=#{BOUNDARY}"})
       else
@@ -66,8 +66,7 @@ module Nitrous
       assert !error? 
     end
     
-    
-    def post_form(url, data={}, method=:post)
+    def post_form(url, data={}, method = :post)
       fields = data.to_fields
       if fields.values.any? {|v| v.respond_to?(:read)}
         self.send(method, url, multipart_encode(fields), {'Content-Type' => "multipart/form-data, boundary=#{BOUNDARY}"})
@@ -118,10 +117,11 @@ module Nitrous
       fail("Expected page to contain <#{string}> but it did not. Page:\n#{response.body}") unless response.body.include?(string)
     end
     
-    def hidden_values(form)
-      hiddens = css_select(form, "input[type=hidden]")
-      pairs = hiddens.inject({}) {|p,h| p[h["name"]] = h["value"]; p}
-      ActionController::UrlEncodedPairParser.new(pairs).result
+    def existing_values(form)
+      inputs = css_select(form, "input").reject {|i| %w(checkbox radio).include?(i["type"]) && (i["checked"].blank? || i["checked"].downcase != "checked")}
+      pairs = inputs.inject({}) {|p,h| p[h["name"]] = h["value"]; p}
+      # TODO handle textareas and selects
+      ActionController::UrlEncodedPairParser.new(pairs.reject {|k, v| v.nil?}).result
     end
 
     def validate_form_fields(form, data)
