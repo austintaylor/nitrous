@@ -51,7 +51,8 @@ module Nitrous
       id, data = nil, id if id.is_a?(Hash)
       form = css_select(id ? "form##{id}" : "form").first
       fail(id ? "Form not found with id <#{id}>" : "No form found") unless form
-      validate_form_fields(form, data)
+      validate = data.delete(:validate)
+      validate_form_fields(form, data) unless validate == false
       fields = data.to_fields.reverse_merge(existing_values(form).to_fields)
       if form['enctype'] == 'multipart/form-data'
         self.send(form["method"], form["action"], multipart_encode(fields), {'Content-Type' => "multipart/form-data, boundary=#{BOUNDARY}"})

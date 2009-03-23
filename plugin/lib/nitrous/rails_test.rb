@@ -39,9 +39,11 @@ module Nitrous
       end
 
       def reset_record_tracking
-        ActiveRecord::Base.saved_objects = {}
-        ActiveRecord::Base.invalid_objects = {}
-        ActiveRecord::Base.destroyed_objects = {}
+        if defined?(ActiveRecord)
+          ActiveRecord::Base.saved_objects = {}
+          ActiveRecord::Base.invalid_objects = {}
+          ActiveRecord::Base.destroyed_objects = {}
+        end
         @emails = ActionMailer::Base.deliveries.size
       end
     
@@ -51,8 +53,10 @@ module Nitrous
       end
       
       def nitrous_teardown
-        ActiveRecord::Base.send(:subclasses).each do |klass|
-          klass.delete_all
+        if defined?(ActiveRecord)
+          ActiveRecord::Base.send(:subclasses).each do |klass|
+            klass.delete_all
+          end
         end
       end
   end
