@@ -110,7 +110,7 @@ module Nitrous
       css_select(html_document.root, "input, select, textarea").detect {|field| field["name"] == name}["value"]
     end
 
-    def assert_viewing(request_uri, message="")
+    def assert_viewing(request_uri, message=nil)
       assert_match %r(#{request_uri}(\?|&|$)), current_uri, message
     end
     
@@ -143,18 +143,20 @@ module Nitrous
 
     def follow_redirect!
       raise "not a redirect! #{@status} #{@status_message}" unless redirect?
-      get(interpret_uri(headers['location'].first))
+      
+      location = URI.parse(headers['location'].first)
+      path = location.query ? "#{location.path}?#{location.query}" : location.path
+      domains = location.host.split('.')
+      subdomain = domains.length > 2 ? domains.first : nil
+      set_subdomain(subdomain) if subdomain != @subdomain
+      
+      get(path)
       status
     end
 
     def html_document
       xml = @response.content_type =~ /xml$/
       @html_document ||= HTML::Document.new(@response.body, false, xml)
-    end
-    
-    def interpret_uri(path)
-      location = URI.parse(path)
-      location.query ? "#{location.path}?#{location.query}" : location.path
     end
     
     def get(path, parameters=nil, headers={})

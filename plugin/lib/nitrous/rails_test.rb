@@ -24,6 +24,13 @@ module Nitrous
     ensure
       @emails = ActionMailer::Base.deliveries.size
     end
+
+    def assert_no_email_sent!(&block)
+      assert_equal! @emails, ActionMailer::Base.deliveries.size
+      block.call if block_given?
+    ensure
+      @emails = ActionMailer::Base.deliveries.size
+    end
     
     def invalid(type)
       lookup(type, ActiveRecord::Base.invalid_objects)

@@ -73,7 +73,7 @@ module Nitrous
     
     def assert_match!(pattern, string, message=nil)
       pattern = Regexp.new(Regexp.escape(pattern)) if pattern.is_a?(String)
-      fail("#{string} expected to be =~ #{pattern}") unless string =~ pattern
+      fail(message || "#{string} expected to be =~ #{pattern}") unless string =~ pattern
     end
 
     def assert_raise!(type=Exception, &block)
