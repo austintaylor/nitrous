@@ -24,11 +24,16 @@ module Nitrous
     end
 
     def self.test(name=nil, &block)
-      self.tests << TestBlock.new(name, block)
+      self.tests << TestBlock.new(name, block) unless @single_test
+    end
+    
+    def self.stest(name=nil, &block)
+      @tests = [TestBlock.new(name, block)]
+      @single_test = true;
     end
 
     def self.ztest(name=nil, &block)
-      self.tests << TestBlock.new(name, block, true)
+      self.tests << TestBlock.new(name, block, true) unless @single_test
     end
     
     def self.exclude(klass)
