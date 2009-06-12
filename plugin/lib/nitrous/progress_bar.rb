@@ -55,7 +55,7 @@ module Nitrous
     def draw_bar(color, width)
       content = @text[0..[width, @text.length].min] + " " * [width - @text.length, 0].max
       $stdout.direct_write("\e[#{color}m#{content}\e[0m")
-      $stdout.direct_write(@text[width..-1]) if @text.length > width
+      $stdout.direct_write(@text[(width + 1)..-1]) if @text.length > width
       $stdout.direct_write("\n")
     end
 
