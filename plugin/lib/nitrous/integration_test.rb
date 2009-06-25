@@ -48,6 +48,7 @@ module Nitrous
     
     BOUNDARY = 'multipart-boundary000'
     def submit_form(id, data = {})
+      @redisplay = false
       id, data = nil, id if id.is_a?(Hash)
       form = css_select(id ? "form##{id}" : "form").first
       fail(id ? "Form not found with id <#{id}>" : "No form found") unless form
@@ -61,7 +62,7 @@ module Nitrous
       end
       puts response.body if error?
       assert !error?
-      @redisplay = true if !redirect? && id && css_select("form##{id}").first
+      @redisplay = true if !redirect? && (id ? css_select("form##{id}").first : true)
       follow_redirect! if redirect?
       puts response.body if error?
       assert !error? 
@@ -150,7 +151,7 @@ module Nitrous
       subdomain = domains.length > 2 ? domains.first : nil
       set_subdomain(subdomain) if subdomain != @subdomain
       
-      get(path)
+      get(location.host.include?('localhost') ? path : headers['location'].first)
       status
     end
 
