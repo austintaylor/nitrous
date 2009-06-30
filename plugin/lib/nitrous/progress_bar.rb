@@ -17,6 +17,12 @@ module Nitrous
       @stdout.write(object)
       @progress_bar.redraw_bar
     end
+    
+    def print(*args)
+      args.each do |arg|
+        write(arg)
+      end
+    end
 
     def puts(*args)
       args.each do |arg|

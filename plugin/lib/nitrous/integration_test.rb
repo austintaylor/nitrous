@@ -1,7 +1,9 @@
-require 'webrick_server'
 require 'action_controller/assertions/selector_assertions'
 require 'rails_ext'
 require 'mime/types'
+require 'active_support'
+require 'action_controller'
+require 'fileutils'
 module Nitrous
   class IntegrationTest < RailsTest
     include ActionController::Assertions::SelectorAssertions
@@ -9,23 +11,60 @@ module Nitrous
     at_exit {start_server}
     
     def self.start_server
-      # parameters = [
-      #   "start",
-      #   "-p", '4033',
-      #   "-a", '0.0.0.0',
-      #   "-e", 'development',
-      #   "-l", "#{RAILS_ROOT}/tmp/mongrel.log",
-      #   "-c", RAILS_ROOT,
-      #   "-r", File.expand_path(RAILS_ROOT + "/public/"),
-      #   "-P", "#{RAILS_ROOT}/tmp/pids/mongrel.pid"
-      # ]
-      # `mongrel_rails #{parameters.join(" ")} -d`
       @server_thread = Thread.start do
-        Socket.do_not_reverse_lookup = true # patch for OS X
-        server = WEBrick::HTTPServer.new(:BindAddress => '0.0.0.0', :ServerType => WEBrick::SimpleServer, :Port => 4022, :AccessLog => [], :Logger => WEBrick::Log.new("/dev/null"))
-        server.mount('/', DispatchServlet, :server_root => File.expand_path(RAILS_ROOT + "/public/"))
-        trap("INT") { server.shutdown }
-        server.start
+        options = {
+          :Port        => 4022,
+          :Host        => "0.0.0.0",
+          :environment => (ENV['RAILS_ENV'] || "development").dup,
+          :config      => RAILS_ROOT + "/config.ru",
+          :detach      => false,
+          :debugger    => false,
+          :path        => nil
+        }
+
+          server = Rack::Handler::WEBrick
+        # begin
+        #   server = Rack::Handler::Mongrel
+        # rescue LoadError => e
+        # end
+
+        ENV["RAILS_ENV"] = options[:environment]
+        RAILS_ENV.replace(options[:environment]) if defined?(RAILS_ENV)
+
+        if File.exist?(options[:config])
+          config = options[:config]
+          if config =~ /\.ru$/
+            cfgfile = File.read(config)
+            if cfgfile[/^#\\(.*)/]
+              opts.parse!($1.split(/\s+/))
+            end
+            inner_app = eval("Rack::Builder.new {( " + cfgfile + "\n )}.to_app", nil, config)
+          else
+            require config
+            inner_app = Object.const_get(File.basename(config, '.rb').capitalize)
+          end
+        else
+          require RAILS_ROOT + "/config/environment"
+          inner_app = ActionController::Dispatcher.new
+        end
+
+        app = Rack::Builder.new {
+          # use Rails::Rack::LogTailer unless options[:detach]
+          use Rails::Rack::Debugger if options[:debugger]
+          map '/' do
+            use Rails::Rack::Static 
+            run inner_app
+          end
+        }.to_app
+
+        trap(:INT) { exit }
+
+        server.run(app, options.merge(:AccessLog => [], :Logger => WEBrick::Log.new("/dev/null")))
+        
+        # Socket.do_not_reverse_lookup = true # patch for OS X
+        # server = WEBrick::HTTPServer.new(:BindAddress => '0.0.0.0', :ServerType => WEBrick::SimpleServer, :Port => 4022, :AccessLog => [], :Logger => WEBrick::Log.new("/dev/null"))
+        # server.mount('/', DispatchServlet, :server_root => File.expand_path(RAILS_ROOT + "/public/"))
+        # Rack::Handler::Mongrel.start(app, :Host => '0.0.0.0', :Port => 4022, :config => RAILS_ROOT + "/config.ru", :AccessLog => [])
       end
       sleep 0.001 until @server_thread.status == "sleep"
     end
@@ -54,7 +93,7 @@ module Nitrous
       fail(id ? "Form not found with id <#{id}>" : "No form found") unless form
       validate = data.delete(:validate)
       validate_form_fields(form, data) unless validate == false
-      fields = data.to_fields.reverse_merge(existing_values(form).to_fields)
+      fields = data.to_fields.reverse_merge(existing_values(form))
       if form['enctype'] == 'multipart/form-data'
         self.send(form["method"], form["action"], multipart_encode(fields), {'Content-Type' => "multipart/form-data, boundary=#{BOUNDARY}"})
       else
@@ -112,7 +151,7 @@ module Nitrous
     end
 
     def assert_viewing(request_uri, message=nil)
-      assert_match %r(#{request_uri}(\?|&|$)), current_uri, message
+      assert_match %r(#{Regexp.escape(request_uri)}(\?|&|$)), current_uri, message
     end
     
     def assert_page_contains!(string)
@@ -140,9 +179,9 @@ module Nitrous
     
     def existing_values(form)
       inputs = css_select(form, "input").reject {|i| %w(checkbox radio).include?(i["type"]) && (i["checked"].blank? || i["checked"].downcase != "checked")}
-      pairs = inputs.inject({}) {|p,h| p[h["name"]] = h["value"]; p}
       # TODO handle textareas and selects
-      ActionController::UrlEncodedPairParser.new(pairs.reject {|k, v| v.nil?}).result
+      # ActionController::UrlEncodedPairParser.new(pairs.reject {|k, v| v.nil?}).result
+      inputs.inject({}) {|p,h| p[h["name"]] = h["value"]; p}.reject {|k, v| v.nil?}
     end
 
     def validate_form_fields(form, data)
