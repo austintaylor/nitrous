@@ -119,6 +119,25 @@ module Nitrous
       fail("Expected page to contain <#{string}> but it did not. Page:\n#{response.body}") unless response.body.include?(string)
     end
     
+    def assert_form_values!(data)
+      form = css_select('form').first
+      data.to_fields.each do |name, value|
+        form_fields = css_select form, "input, select, textarea"
+        matching_field = form_fields.detect {|field| field["name"] == name || field["name"] == "#{name}[]"}
+        fail "Could not find a form field having the name #{name}" unless matching_field
+        case matching_field.name.downcase
+        when 'input'
+          assert_equal value.to_s, matching_field['value']
+        when 'textarea'
+          assert_equal value.to_s, matching_field.inner_html
+        when 'select'
+          selected_option = css_select(matching_field, 'option[selected]').first
+          fail("No option selected for #{name}. Expected #{value} to be selected.") unless selected_option
+          assert_equal value.to_s, selected_option['value']
+        end
+      end
+    end
+    
     def existing_values(form)
       inputs = css_select(form, "input").reject {|i| %w(checkbox radio).include?(i["type"]) && (i["checked"].blank? || i["checked"].downcase != "checked")}
       pairs = inputs.inject({}) {|p,h| p[h["name"]] = h["value"]; p}
@@ -154,7 +173,7 @@ module Nitrous
       get(location.host.include?('localhost') ? path : headers['location'].first)
       status
     end
-
+    
     def html_document
       xml = @response.content_type =~ /xml$/
       @html_document ||= HTML::Document.new(@response.body, false, xml)
