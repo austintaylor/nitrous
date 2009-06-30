@@ -295,7 +295,7 @@ module Nitrous
 
     def parse_result
       @headers = @response.to_hash
-      @cookies = {}
+      @cookies ||= {}
       (@headers['set-cookie'] || [] ).each do |string|
         name, value = string.match(/^([^=]*)=([^;]*);/)[1,2]
         @cookies[name] = value
