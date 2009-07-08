@@ -158,8 +158,10 @@ module Nitrous
       fail("Expected page to contain <#{string}> but it did not. Page:\n#{response.body}") unless response.body.include?(string)
     end
     
-    def assert_form_values!(data)
-      form = css_select('form').first
+    def assert_form_values!(id, data={})
+      id, data = nil, id if id.is_a?(Hash)
+      form = css_select(id ? "form##{id}" : "form").first
+      fail(id ? "Form not found with id <#{id}>" : "No form found") unless form
       data.to_fields.each do |name, value|
         form_fields = css_select form, "input, select, textarea"
         matching_field = form_fields.detect {|field| field["name"] == name || field["name"] == "#{name}[]"}
