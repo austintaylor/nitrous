@@ -164,7 +164,7 @@ module Nitrous
       fail(id ? "Form not found with id <#{id}>" : "No form found") unless form
       data.to_fields.each do |name, value|
         form_fields = css_select form, "input, select, textarea"
-        matching_field = form_fields.detect {|field| field["name"] == name || field["name"] == "#{name}[]"}
+        matching_field = form_fields.detect {|field| (field["name"] == name || field["name"] == "#{name}[]") && (!%w(radio checkbox).include?(field['type']) || field['checked'] == 'checked')}
         fail "Could not find a form field having the name #{name}" unless matching_field
         case matching_field.name.downcase
         when 'input'
