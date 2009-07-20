@@ -78,8 +78,8 @@ module Nitrous
       end
     end
     
-    def navigate_to(path)
-      get path
+    def navigate_to(path, headers={})
+      get path, nil, headers
       follow_redirect! if redirect?
       puts response.body if error?
       assert !error?
