@@ -158,17 +158,25 @@ module Nitrous
       fail("Expected page to contain <#{string}> but it did not. Page:\n#{response.body}") unless response.body.include?(string)
     end
     
+    def assert_not_page_contains!(string)
+      fail("Expected page not to contain <#{string}> but it did. Page:\n#{response.body}") if response.body.include?(string)
+    end
+    
     def assert_form_values!(id, data={})
       id, data = nil, id if id.is_a?(Hash)
       form = css_select(id ? "form##{id}" : "form").first
       fail(id ? "Form not found with id <#{id}>" : "No form found") unless form
       data.to_fields.each do |name, value|
         form_fields = css_select form, "input, select, textarea"
-        matching_field = form_fields.detect {|field| (field["name"] == name || field["name"] == "#{name}[]") && (!%w(radio checkbox).include?(field['type']) || field['checked'] == 'checked')}
+        matching_fields = form_fields.select {|field| (field["name"] == name || field["name"] == "#{name}[]") && (!%w(radio checkbox).include?(field['type']) || field['checked'] == 'checked')}
+
+        # Handle boolean checkboxes
+        matching_field = matching_fields.detect {|f| f['checked'] == 'checked'} || matching_fields.first
+
         fail "Could not find a form field having the name #{name}" unless matching_field
         case matching_field.name.downcase
         when 'input'
-          assert_equal value.to_s, matching_field['value']
+          fail "Expected value of field #{name} to be #{value} but was #{matching_field['value']}" unless value.to_s == matching_field['value']
         when 'textarea'
           assert_equal value.to_s, matching_field.inner_html
         when 'select'
