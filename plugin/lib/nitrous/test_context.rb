@@ -15,11 +15,12 @@ module Nitrous
     
     def initialize(test_count)
       @start_time = Time.now
-      @total, @failures, @test = test_count, 0, 0
+      @total, @failures, @test, @skip = test_count, 0, 0, 0
     end
 
     def ran_test(test, result)
       @test += 1
+      @skip += 1 if test.skip?
       puts result
       puts result.errors.map(&:test_output).join("\n\n") + "\n" unless result.errors.empty?
     end
@@ -33,7 +34,7 @@ module Nitrous
     end
     
     def summary
-      "Test #{@test} of #{@total} -- #{@failures} failure#{@failures == 1 ? '' : 's'}"
+      "Test #{@test} of #{@total} -- #{@failures} failure#{@failures == 1 ? '' : 's'} -- #{@skip} skipped"
     end
     
     def summary_with_benchmark
