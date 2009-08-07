@@ -1,6 +1,5 @@
 unless defined? RailsEnv
   require 'drb'
-  require 'fileutils'
   
   module Kernel
     def at_exit(&block)
@@ -15,7 +14,7 @@ unless defined? RailsEnv
       def join
         DRb.start_service
         ro = DRbObject.new(nil, 'druby://:7777')
-        ro.mimic_environment($stdout, ENV, ARGV)
+        ro.stdout = $stdout
         ro.run_file($0)
         exit
       end
@@ -32,15 +31,12 @@ unless defined? RailsEnv
     end
   
     def initialize(path)
-      FileUtils.cd(path)
-      require "config/environment"
+      require File.join(path, "config/environment")
       puts "ready"
     end
   
-    def mimic_environment(stdout, env, argv)
+    def stdout=(stdout)
       $stdout = stdout
-      ENV.replace(env)
-      ARGV.replace(argv)
     end
   
     def run(&block)
@@ -55,8 +51,7 @@ unless defined? RailsEnv
         self.class.exit_blocks.each(&:call)
       end
     rescue Exception
-      $stdout.puts($!)
-      $stdout.puts($!.backtrace.join("\n"))
+      $stdout.print($!)
     end
   
     def console(_in, out)

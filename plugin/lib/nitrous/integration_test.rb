@@ -155,11 +155,11 @@ module Nitrous
     end
     
     def assert_page_contains!(string)
-      fail("Expected page to contain <#{string}> but it did not. Page:\n#{response.body}") unless response.body.include?(string)
+      fail("Expected page to contain <#{string}> but it did not. Page:\n#{response.body}") unless response.body.include?(string.to_s)
     end
     
     def assert_not_page_contains!(string)
-      fail("Expected page not to contain <#{string}> but it did. Page:\n#{response.body}") if response.body.include?(string)
+      fail("Expected page not to contain <#{string}> but it did. Page:\n#{response.body}") if response.body.include?(string.to_s)
     end
     
     def assert_form_values!(id, data={})
@@ -188,10 +188,19 @@ module Nitrous
     end
     
     def existing_values(form)
-      inputs = css_select(form, "input").reject {|i| %w(checkbox radio).include?(i["type"]) && (i["checked"].blank? || i["checked"].downcase != "checked")}
-      # TODO handle textareas and selects
-      # ActionController::UrlEncodedPairParser.new(pairs.reject {|k, v| v.nil?}).result
-      inputs.inject({}) {|p,h| p[h["name"]] = h["value"]; p}.reject {|k, v| v.nil?}
+      inputs = css_select(form, 'input').reject {|i| %w(checkbox radio).include?(i['type']) && (i['checked'].blank? || i['checked'].downcase != 'checked')}
+      values = {}
+      inputs.each do |input|
+        values[input['name']] = input['value']
+      end
+      css_select(form, 'textarea').each do |textarea|
+        values[textarea['name']] = textarea.to_s
+      end
+      css_select(form, 'select').each do |select|
+        selected = css_select(select, 'option[selected]').first || css_select(select, 'option').first
+        values[select['name']] = selected['value'] if selected
+      end
+      values.reject {|k, v| v.nil?}
     end
 
     def validate_form_fields(form, data)
