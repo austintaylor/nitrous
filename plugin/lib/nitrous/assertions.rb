@@ -51,8 +51,8 @@ module Nitrous
       raise AssertionFailedError.new(message, @current_test.filename)
     end
 
-    def assert!(value)
-      fail("#{value.inspect} is not true.") unless value
+    def assert!(value, message=nil)
+      fail(message || "#{value.inspect} is not true.") unless value
       yield if block_given?
     end
 
