@@ -178,7 +178,7 @@ module Nitrous
         when 'input'
           fail "Expected value of field #{name} to be #{value} but was #{matching_field['value']}" unless value.to_s == matching_field['value']
         when 'textarea'
-          assert_equal value.to_s, matching_field.inner_html
+          assert_equal value.to_s, matching_field.children.first.to_s
         when 'select'
           selected_option = css_select(matching_field, 'option[selected]').first
           fail("No option selected for #{name}. Expected #{value} to be selected.") unless selected_option
