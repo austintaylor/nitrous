@@ -4,8 +4,10 @@ require 'mime/types'
 require 'active_support'
 require 'action_controller'
 require 'fileutils'
+require 'patron'
 module Nitrous
   class IntegrationTest < RailsTest
+    SERVER_PORT = 4022
     include ActionController::Assertions::SelectorAssertions
     attr_accessor :cookies, :response, :status, :headers, :current_uri
     at_exit {start_server}
@@ -13,7 +15,7 @@ module Nitrous
     def self.start_server
       @server_thread = Thread.start do
         options = {
-          :Port        => 4022,
+          :Port        => SERVER_PORT,
           :Host        => "0.0.0.0",
           :environment => (ENV['RAILS_ENV'] || "development").dup,
           :config      => RAILS_ROOT + "/config.ru",
@@ -74,7 +76,7 @@ module Nitrous
       if options.delete(:only_path)
         ActionController::Routing::Routes.generate(options)
       else
-        "http://localhost:4022" + ActionController::Routing::Routes.generate(options)
+        "http://localhost:#{SERVER_PORT}" + ActionController::Routing::Routes.generate(options)
       end
     end
     
@@ -200,7 +202,7 @@ module Nitrous
         selected = css_select(select, 'option[selected]').first || css_select(select, 'option').first
         values[select['name']] = selected['value'] if selected
       end
-      values.reject {|k, v| v.nil?}
+      values.each{|k, v| values[k] = '' if v.nil?}
     end
 
     def validate_form_fields(form, data)
@@ -308,7 +310,12 @@ module Nitrous
     end
     
     def http_session
-      uri = URI.parse("http://localhost:4022/") unless @http
+      # @http ||= returning(Patron::Session.new) do |session|
+      #   session.timeout = 10
+      #   session.base_url = "http://localhost:#{SERVER_PORT}"
+      #   session.headers['User-Agent'] = 'Nitrous/1.0'
+      # end
+      uri = URI.parse("http://localhost:#{SERVER_PORT}/") unless @http
       @http ||= Net::HTTP.start(uri.host, uri.port)
     end
 
