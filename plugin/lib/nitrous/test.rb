@@ -8,11 +8,19 @@ module Nitrous
     include Assertions
     
     def self.callbacks
-      @@callbacks ||= {:suite_setup => [], :suite_teardown => []}
+      @@callbacks ||= {:suite_setup => [], :suite_teardown => [], :setup => [], :teardown => []}
+    end
+    
+    def callbacks
+      self.class.callbacks
     end
     
     def self.register_callback(type, &callback)
       callbacks[type] << callback
+    end
+    
+    def register_callback(type, &callback)
+      self.class.register_callback(type, callback)
     end
     
     def self.tests
@@ -97,9 +105,11 @@ module Nitrous
         running(test_block)
         nitrous_setup
         collect_errors do
+          callbacks[:setup].each(&:call)
           setup
           test_block.run(self)
           teardown
+          callbacks[:teardown].each(&:call)
         end
         nitrous_teardown
         @context.ran_test(test_block, @test_results.last)
