@@ -196,7 +196,7 @@ module Nitrous
         values[input['name']] = input['value']
       end
       css_select(form, 'textarea').each do |textarea|
-        values[textarea['name']] = textarea.to_s
+        values[textarea['name']] = textarea.children.map(&:to_s).join
       end
       css_select(form, 'select').each do |select|
         selected = css_select(select, 'option[selected]').first || css_select(select, 'option').first

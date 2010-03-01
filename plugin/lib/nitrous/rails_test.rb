@@ -69,7 +69,7 @@ module Nitrous
       def nitrous_teardown
         if defined?(ActiveRecord)
           ActiveRecord::Base.send(:subclasses).each do |klass|
-            klass.delete_all
+            klass.delete_all rescue nil
           end
         end
       end
