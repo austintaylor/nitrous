@@ -139,9 +139,18 @@ module Nitrous
       data
     end
     
-    def click_link(url)
-      fail("No link found with url <#{url}>") unless css_select("*[href=#{url}]").first
-      navigate_to(url)
+    def click_link(url, method=:get)
+      if method = :delete
+        elements = css_select("*[href=#{url},onclick]")
+        fail("No link found with url <#{url}> with method delete") if elements.empty? || elements.any?{|element| element["onclick"] ~= /m.setAttribute('name', '_method'); m.setAttribute('value', 'delete');/}
+        delete url, nil, headers
+        follow_redirect! if redirect?
+        puts response.body if error?
+        assert !error?
+      else
+        fail("No link found with url <#{url}>") unless css_select("*[href=#{url}]").first
+        navigate_to(url)
+      end
     end
     
     def assert_form_redisplayed!
