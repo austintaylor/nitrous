@@ -140,10 +140,10 @@ module Nitrous
     end
     
     def click_link(url, method=:get)
-      if method = :delete
-        elements = css_select("*[href=#{url},onclick]")
-        fail("No link found with url <#{url}> with method delete") if elements.empty? || elements.any?{|element| element["onclick"] ~= /m.setAttribute('name', '_method'); m.setAttribute('value', 'delete');/}
-        delete url, nil, headers
+      if method == :delete
+        elements = css_select("*[href=#{url}]")
+        fail("No link found with url <#{url}> and method delete") if elements.empty? || !elements.any?{|element| element["onclick"].include?("m.setAttribute('name', '_method'); m.setAttribute('value', 'delete');")}
+        delete url
         follow_redirect! if redirect?
         puts response.body if error?
         assert !error?
