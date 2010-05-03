@@ -11,7 +11,7 @@ module Nitrous
     include ActionController::Assertions::SelectorAssertions
     attr_accessor :cookies, :response, :status, :headers, :current_uri
     at_exit {start_server}
-    
+
     def self.start_server
       @server_thread = Thread.start do
         options = {
@@ -54,7 +54,7 @@ module Nitrous
           # use Rails::Rack::LogTailer unless options[:detach]
           use Rails::Rack::Debugger if options[:debugger]
           map '/' do
-            use Rails::Rack::Static 
+            use Rails::Rack::Static
             run inner_app
           end
         }.to_app
@@ -62,7 +62,7 @@ module Nitrous
         trap(:INT) { exit }
 
         server.run(app, options.merge(:AccessLog => [], :Logger => WEBrick::Log.new("/dev/null")))
-        
+
         # Socket.do_not_reverse_lookup = true # patch for OS X
         # server = WEBrick::HTTPServer.new(:BindAddress => '0.0.0.0', :ServerType => WEBrick::SimpleServer, :Port => 4022, :AccessLog => [], :Logger => WEBrick::Log.new("/dev/null"))
         # server.mount('/', DispatchServlet, :server_root => File.expand_path(RAILS_ROOT + "/public/"))
@@ -70,7 +70,7 @@ module Nitrous
       end
       sleep 0.001 until @server_thread.status == "sleep"
     end
-    
+
     ActionController::Routing::Routes.install_helpers(self)
     def url_for(options)
       if options.delete(:only_path)
@@ -79,14 +79,14 @@ module Nitrous
         "http://localhost:#{SERVER_PORT}" + ActionController::Routing::Routes.generate(options)
       end
     end
-    
+
     def navigate_to(path, headers={})
       get path, nil, headers
       follow_redirect! if redirect?
       puts response.body if error?
       assert !error?
     end
-    
+
     BOUNDARY = 'multipart-boundary000'
     def submit_form(id, data = {})
       @redisplay = false
@@ -106,9 +106,9 @@ module Nitrous
       @redisplay = true if !redirect? && (id ? css_select("form##{id}").first : true)
       follow_redirect! if redirect?
       puts response.body if error?
-      assert !error? 
+      assert !error?
     end
-    
+
     def post_form(url, data={}, method = :post)
       fields = data.to_fields
       if fields.values.any? {|v| v.respond_to?(:read)}
@@ -117,7 +117,7 @@ module Nitrous
         self.send(method, url, fields)
       end
     end
-    
+
     def multipart_encode(fields)
       data = ""
       fields.to_fields.each do |key, value|
@@ -138,7 +138,7 @@ module Nitrous
       data << "--#{BOUNDARY}--"
       data
     end
-    
+
     def click_link(url, method=:get)
       if method == :delete
         elements = css_select("*[href=#{url}][onclick]")
@@ -152,27 +152,28 @@ module Nitrous
         navigate_to(url)
       end
     end
-    
+
     def assert_form_redisplayed!
       fail("Expected form to redisplay. Redirected to <#{current_uri}>") unless @redisplay
     end
-    
+
     def field_value(name)
       css_select(html_document.root, "input, select, textarea").detect {|field| field["name"] == name}["value"]
     end
 
     def assert_viewing(request_uri, message=nil)
+      fail("Expected page but recieved redirect. <#{current_uri}>") unless success?
       assert_match %r(#{Regexp.escape(request_uri)}(\?|&|$)), current_uri, message
     end
-    
+
     def assert_page_contains!(string)
       fail("Expected page to contain <#{string}> but it did not. Page:\n#{response.body}") unless response.body.include?(string.to_s)
     end
-    
+
     def assert_not_page_contains!(string)
       fail("Expected page not to contain <#{string}> but it did. Page:\n#{response.body}") if response.body.include?(string.to_s)
     end
-    
+
     def assert_form_values!(id, data={})
       id, data = nil, id if id.is_a?(Hash)
       form = css_select(id ? "form##{id}" : "form").first
@@ -197,7 +198,7 @@ module Nitrous
         end
       end
     end
-    
+
     def existing_values(form)
       inputs = css_select(form, 'input').reject {|i| %w(checkbox radio).include?(i['type']) && (i['checked'].blank? || i['checked'].downcase != 'checked')}
       values = {}
@@ -223,7 +224,7 @@ module Nitrous
         assert_equal "multipart/form-data", form["enctype"], "Form <#{form['id']}> has a file field <#{name}>, but the enctype is not multipart/form-data" if matching_field["type"] == "file"
       end
     end
-    
+
     def view(email)
       @response = ActionController::TestResponse.new
       @response.body = email.body
@@ -232,22 +233,22 @@ module Nitrous
 
     def follow_redirect!
       raise "not a redirect! #{@status} #{@status_message}" unless redirect?
-      
+
       location = URI.parse(headers['location'].first)
       path = location.query ? "#{location.path}?#{location.query}" : location.path
       domains = location.host.split('.')
       subdomain = domains.length > 2 ? domains.first : nil
       set_subdomain(subdomain) if subdomain != @subdomain
-      
+
       get(location.host.include?('localhost') ? path : headers['location'].first)
       status
     end
-    
+
     def html_document
       xml = @response.content_type =~ /xml$/
       @html_document ||= HTML::Document.new(@response.body, false, xml)
     end
-    
+
     def get(path, parameters=nil, headers={})
       headers['QUERY_STRING'] = requestify(parameters) || ""
       process(headers, path) do
@@ -258,7 +259,7 @@ module Nitrous
         end
       end
     end
-    
+
     def post(path, parameters=nil, headers={})
       data = requestify(parameters) || ""
       headers['CONTENT_LENGTH'] = data.length.to_s
@@ -266,14 +267,14 @@ module Nitrous
         http_session.post(path, data, headers)
       end
     end
-    
+
     def delete(path, parameters=nil, headers={})
       headers['QUERY_STRING'] = requestify(parameters) || ""
       process(headers, path) do
         http_session.delete(path, headers)
       end
     end
-    
+
     def put(path, parameters=nil, headers={})
       data = requestify(parameters) || ""
       headers['CONTENT_LENGTH'] = data.length.to_s
@@ -281,7 +282,7 @@ module Nitrous
         http_session.put(path, data, headers)
       end
     end
-    
+
     def process(headers, path=nil)
       headers['Cookie'] = encode_cookies unless encode_cookies.blank?
       self.response = yield
@@ -289,7 +290,7 @@ module Nitrous
       @html_document = nil
       parse_result
     end
-    
+
     # was the response successful?
     def success?
       status == 200
@@ -311,13 +312,13 @@ module Nitrous
     end
 
     private
-    
+
     def encode_cookies
       (cookies||{}).inject("") do |string, (name, value)|
         string << "#{name}=#{value}; "
       end
     end
-    
+
     def http_session
       # @http ||= returning(Patron::Session.new) do |session|
       #   session.timeout = 10
@@ -337,7 +338,7 @@ module Nitrous
       end
       @status, @status_message = @response.code.to_i, @response.message
     end
-    
+
     def name_with_prefix(prefix, name)
       prefix ? "#{prefix}[#{name}]" : name.to_s
     end
@@ -354,16 +355,16 @@ module Nitrous
         "#{CGI.escape(prefix)}=#{CGI.escape(parameters.to_s)}"
       end
     end
-    
+
     class DummyFile
       def initialize(name, content)
         @name, @content = name, content
       end
-      
+
       def read
         @content
       end
-      
+
       def path
         "/tmp/#{@name}"
       end
