@@ -130,7 +130,6 @@ module Nitrous
           data << value.read
         else
           data << "Content-Disposition: form-data; name=\"#{key}\"\r\n\r\n"
-          puts "Converting #{value.inspect} to String for multipart form submit" unless value.is_a?(String)
           data << value.to_s
         end
         data << "\r\n"
