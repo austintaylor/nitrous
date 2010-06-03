@@ -65,6 +65,7 @@ module Nitrous
           end
           context.finish
           callbacks[:suite_teardown].each(&:call)
+          exit(context.exit_status)
         end
       end
       @test_classes << subclass

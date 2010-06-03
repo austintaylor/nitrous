@@ -32,6 +32,10 @@ module Nitrous
     def finish
       puts summary_with_benchmark
     end
+    
+    def exit_status
+      @failures > 0 ? 1 : 0
+    end
 
     def summary
       "Test #{@test} of #{@total} -- #{@failures} failure#{@failures == 1 ? '' : 's'} -- #{@skip} skipped"
