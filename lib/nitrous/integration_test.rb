@@ -332,6 +332,7 @@ module Nitrous
       @headers = @response.to_hash
       @cookies ||= {}
       (@headers['set-cookie'] || [] ).each do |string|
+        next if string.blank?
         name, value = string.match(/^([^=]*)=([^;]*);/)[1,2]
         @cookies[name] = value
       end
